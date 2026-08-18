@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, rgba(224, 154, 43, 0.08), transparent 50%),
+    radial-gradient(900px 400px at 100% 0%, rgba(47, 158, 138, 0.06), transparent 45%),
+    #1c1712;
+  color: #efe4cf;
+  font-family: Outfit, system-ui, sans-serif;
+}
+
+::selection {
+  background: #e09a2b;
+  color: #1c1712;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+.led {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.led-pulse {
+  animation: led-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes led-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.vu-track {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(224, 154, 43, 0.15) 0 6px,
+    transparent 6px 10px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .led-pulse {
+    animation: none;
+  }
+}

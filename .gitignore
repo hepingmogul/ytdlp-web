@@ -1,0 +1,13 @@
+data/*
+!data/.gitkeep
+server/.venv/
+server/**/__pycache__/
+server/.pytest_cache/
+server/*.egg-info/
+web/node_modules/
+web/dist/
+web/.vite/
+*.pyc
+.DS_Store
+.env
+.env.local
