@@ -113,6 +113,7 @@ export function infoToParse(info: Record<string, unknown>): ParseResult {
     const item = slimFormat(raw as Record<string, unknown>);
     if (item) formats.push(item);
   }
+  const uniqueFormats = dedupeFormats(formats);
 
   return {
     type: 'video',
@@ -123,10 +124,46 @@ export function infoToParse(info: Record<string, unknown>): ParseResult {
     duration: typeof info.duration === 'number' ? info.duration : null,
     uploader: (info.uploader as string) || (info.channel as string) || null,
     webpageUrl: (info.webpage_url as string) || null,
-    formats,
+    formats: uniqueFormats,
     presets: PRESETS,
     entries: [],
   };
+}
+
+function resolutionDedupeKey(resolution: string | null | undefined): string | null {
+  if (!resolution) return null;
+  const wh = resolution.match(/(\d+)\s*x\s*(\d+)/i);
+  if (wh) return `${wh[2]}p`;
+  const p = resolution.match(/(\d+)\s*p/i);
+  if (p) return `${p[1]}p`;
+  return resolution;
+}
+
+function formatScore(item: FormatItem): number {
+  const av = item.hasVideo && item.hasAudio ? 1e12 : 0;
+  return av + (item.filesize || 0) + (item.tbr || 0) * 1000;
+}
+
+/** 解析结果列表：仅按分辨率去重（1080p / 1920x1080 视为同一档，优先音视频齐全且体积更大） */
+export function dedupeFormats(formats: FormatItem[]): FormatItem[] {
+  const best = new Map<string, FormatItem>();
+  const order: string[] = [];
+  const noRes: FormatItem[] = [];
+  for (const item of formats) {
+    const key = resolutionDedupeKey(item.resolution);
+    if (!key) {
+      noRes.push(item);
+      continue;
+    }
+    const prev = best.get(key);
+    if (!prev) {
+      best.set(key, item);
+      order.push(key);
+      continue;
+    }
+    if (formatScore(item) > formatScore(prev)) best.set(key, item);
+  }
+  return [...order.map((key) => best.get(key)!), ...noRes];
 }
 
 export async function extractInfoYtdlp(url: string, extra?: { cookies?: string | null; proxy?: string | null }): Promise<ParseResult> {

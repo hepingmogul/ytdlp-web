@@ -133,7 +133,35 @@ function collectPlays(video: Record<string, unknown>): DouyinPlayUrl[] {
   push(video.play_addr_h264, 'dy:h264', 'h264');
   push(video.download_addr, 'dy:download', '下载地址');
 
-  return plays;
+  return dedupePlays(plays);
+}
+
+function playResolutionKey(play: DouyinPlayUrl): string | null {
+  if (play.height) return `${play.height}p`;
+  if (play.width && play.height) return `${play.width}x${play.height}`;
+  return null;
+}
+
+/** 仅按分辨率去重（优先更大体积） */
+function dedupePlays(plays: DouyinPlayUrl[]): DouyinPlayUrl[] {
+  const best = new Map<string, DouyinPlayUrl>();
+  const order: string[] = [];
+  const noRes: DouyinPlayUrl[] = [];
+  for (const play of plays) {
+    const key = playResolutionKey(play);
+    if (!key) {
+      noRes.push(play);
+      continue;
+    }
+    const prev = best.get(key);
+    if (!prev) {
+      best.set(key, play);
+      order.push(key);
+      continue;
+    }
+    if ((play.filesize || 0) > (prev.filesize || 0)) best.set(key, play);
+  }
+  return [...order.map((key) => best.get(key)!), ...noRes];
 }
 
 function thumbnailFrom(detail: Record<string, unknown>, video: Record<string, unknown>): string | null {

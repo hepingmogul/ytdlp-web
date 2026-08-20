@@ -254,12 +254,14 @@ function startElectron() {
     path.resolve(rootDir, 'node_modules/.bin/electron.cmd'),
     [path.resolve(rootDir, 'dist/electron/main/index.js')],
     {
+      cwd: rootDir,
       stdio: 'inherit',
       shell: process.platform === 'win32',
       detached: process.platform !== 'win32',
       env: {
         ...process.env,
         NODE_ENV: 'development',
+        YTDLP_ELECTRON_ROOT: rootDir,
       },
     }
   );
