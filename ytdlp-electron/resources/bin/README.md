@@ -1,7 +1,10 @@
 # 捆绑二进制
 
-将对应平台的 `yt-dlp` 与 `ffmpeg` 放到本目录或 `win32-x64` / `darwin-arm64` 等子目录。
+运行 `npm run bin:fetch` 会把当前平台的 `yt-dlp`、`ffmpeg`、`ffprobe` 下载到 `resources/bin/<platform-arch>/`。
 
-开发环境也可使用系统 PATH 中的 yt-dlp / ffmpeg。
+应用**只使用这些文件**，不读取系统 PATH。
 
-官方 yt-dlp：https://github.com/yt-dlp/yt-dlp/releases
+来源：
+- yt-dlp：https://github.com/yt-dlp/yt-dlp/releases
+- Windows / Linux ffmpeg：https://github.com/yt-dlp/FFmpeg-Builds
+- macOS ffmpeg：https://github.com/eugeneware/ffmpeg-static/releases

@@ -20,6 +20,8 @@ extraResources:
     to: bin
     filter:
       - "**/*"
+      - "!README.md"
+      - "!.gitkeep"
 
 win:
   icon: build/icon.ico

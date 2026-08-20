@@ -16,6 +16,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { copyShared } from './copy-shared.mjs';
+import { ensureBinaries, hasBundledBinaries, packToBinKey } from './fetch-binaries.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../../');
@@ -165,7 +166,14 @@ async function pack() {
     checkBuildArtifacts();
   }
 
-  console.log(`[Pack] Step 3: Packaging for ${config.platform}...`);
+  const binKey = packToBinKey(config.platform, config.arch);
+  console.log(`[Pack] Step 3: 检查捆绑二进制 (${binKey})...`);
+  if (!hasBundledBinaries(binKey)) {
+    console.log('[Pack] 未找到捆绑的 yt-dlp/ffmpeg，开始下载...');
+    await ensureBinaries(binKey, false);
+  }
+
+  console.log(`[Pack] Step 4: Packaging for ${config.platform}...`);
   const command = getElectronBuilderArgs(config);
   runCommand(command, 'Pack');
 

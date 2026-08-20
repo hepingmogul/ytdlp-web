@@ -19,6 +19,8 @@
     "rebuild": "electron-rebuild",
     "preview": "npm run preview --prefix frontend",
     "start": "electron .",
+    "bin:fetch": "node internal/scripts/fetch-binaries.mjs",
+    "bin:fetch:force": "node internal/scripts/fetch-binaries.mjs --force",
     "pack": "npm run env:init:prod && node internal/scripts/pack.mjs",
     "pack:win": "npm run env:init:prod && node internal/scripts/pack.mjs --win",
     "pack:mac": "npm run env:init:prod && node internal/scripts/pack.mjs --mac",

@@ -1,5 +1,5 @@
 /**
- * 定位 yt-dlp / ffmpeg 可执行文件
+ * 定位捆绑的 yt-dlp / ffmpeg（不使用系统 PATH）
  */
 
 import { execFileSync } from 'child_process';
@@ -11,45 +11,14 @@ import type { BinaryCheckResult, BinaryInfo } from '~/electron/shared/types';
 const YTDLP_NAMES = process.platform === 'win32' ? ['yt-dlp.exe', 'yt-dlp'] : ['yt-dlp'];
 const FFMPEG_NAMES = process.platform === 'win32' ? ['ffmpeg.exe', 'ffmpeg'] : ['ffmpeg'];
 
-function findOnPath(command: string): string | null {
-  try {
-    const bin = process.platform === 'win32' ? 'where' : 'which';
-    const out = execFileSync(bin, [command], { encoding: 'utf8', timeout: 8000 });
-    const first = out
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .find((line) => line.length > 0);
-    return first || null;
-  } catch {
-    return null;
-  }
-}
-
-function bundledDirs(): string[] {
-  const platformDir = `${process.platform}-${process.arch}`;
-  const bundled = getBundledBinDir();
-  const dirs = [bundled, path.join(bundled, platformDir)];
-  if (process.env.NODE_ENV !== 'development') {
-    dirs.push(path.join(process.resourcesPath, 'bin', platformDir));
-  } else {
-    dirs.push(path.join(process.cwd(), 'resources', 'bin'));
-  }
-  return [...new Set(dirs)];
-}
+const MISSING_HINT = '未找到捆绑二进制。请在项目根目录运行 npm run bin:fetch';
 
 function findNamed(names: string[]): string | null {
-  for (const dir of bundledDirs()) {
-    for (const name of names) {
-      const candidate = path.join(dir, name);
-      if (fs.existsSync(candidate)) {
-        return candidate;
-      }
-    }
-  }
+  const dir = getBundledBinDir();
   for (const name of names) {
-    const fromPath = findOnPath(name);
-    if (fromPath && fs.existsSync(fromPath)) {
-      return fromPath;
+    const candidate = path.join(dir, name);
+    if (fs.existsSync(candidate)) {
+      return candidate;
     }
   }
   return null;
@@ -81,7 +50,15 @@ export function locateFfmpeg(): string | null {
 export function requireYtdlp(): string {
   const bin = locateYtdlp();
   if (!bin) {
-    throw new Error('未找到 yt-dlp。请安装并加入 PATH，或将二进制放到 resources/bin/<platform-arch>/');
+    throw new Error(`未找到捆绑的 yt-dlp。${MISSING_HINT}`);
+  }
+  return bin;
+}
+
+export function requireFfmpeg(): string {
+  const bin = locateFfmpeg();
+  if (!bin) {
+    throw new Error(`未找到捆绑的 ffmpeg。${MISSING_HINT}`);
   }
   return bin;
 }

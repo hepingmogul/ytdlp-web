@@ -76,12 +76,18 @@ export function getCookiesFilePath(): string {
 }
 
 /**
- * 开发态 / 打包后的捆绑二进制目录
+ * 捆绑二进制目录：仅使用项目内 / extraResources，不读系统 PATH
+ * 未打包：<cwd>/resources/bin/<platform-arch>
+ * 已打包：<resourcesPath>/bin/<platform-arch>（若无则回退 bin 根目录）
  */
 export function getBundledBinDir(): string {
   const platformDir = `${process.platform}-${process.arch}`;
-  if (process.env.NODE_ENV === 'development') {
+  if (!app.isPackaged) {
     return path.join(process.cwd(), 'resources', 'bin', platformDir);
+  }
+  const nested = path.join(process.resourcesPath, 'bin', platformDir);
+  if (fs.existsSync(nested)) {
+    return nested;
   }
   return path.join(process.resourcesPath, 'bin');
 }

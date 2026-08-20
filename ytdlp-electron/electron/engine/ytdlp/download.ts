@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import type { ChildProcess } from 'child_process';
 import { DEFAULT_FORMAT, TASK_MODE } from '~/electron/shared/constant';
-import { locateFfmpeg, requireYtdlp } from '~/electron/engine/ytdlp/binaries';
+import { requireFfmpeg, requireYtdlp } from '~/electron/engine/ytdlp/binaries';
 import { assertHttpUrl, explainYtdlpError, YtdlpCancelled } from '~/electron/engine/ytdlp/errors';
 import { parseProgressLine, type ProgressUpdate } from '~/electron/engine/ytdlp/progress';
 import { runYtdlp } from '~/electron/engine/ytdlp/process';
@@ -107,10 +107,7 @@ function buildArgs(job: DownloadJob): string[] {
     format,
   ];
 
-  const ffmpeg = locateFfmpeg();
-  if (ffmpeg) {
-    args.push('--ffmpeg-location', ffmpeg);
-  }
+  args.push('--ffmpeg-location', requireFfmpeg());
 
   if (job.mode === TASK_MODE.AUDIO) {
     args.push('-x', '--audio-format', job.audioFormat || 'mp3', '--audio-quality', '192');

@@ -86,14 +86,14 @@
             {{ binaries?.ytdlp.version || '未找到' }}
           </span>
         </p>
-        <p class="text-xs text-slate-400 break-all font-mono">{{ binaries?.ytdlp.path || '请安装 yt-dlp 并加入 PATH' }}</p>
+        <p class="text-xs text-slate-400 break-all font-mono">{{ binaries?.ytdlp.path || '未找到捆绑的 yt-dlp，请运行 npm run bin:fetch' }}</p>
         <p>
           <span class="text-slate-500">ffmpeg：</span>
           <span :class="binaries?.ffmpeg.path ? 'text-emerald-700' : 'text-red-600'">
             {{ binaries?.ffmpeg.version || '未找到' }}
           </span>
         </p>
-        <p class="text-xs text-slate-400 break-all font-mono">{{ binaries?.ffmpeg.path || '合并音视频需要 ffmpeg' }}</p>
+        <p class="text-xs text-slate-400 break-all font-mono">{{ binaries?.ffmpeg.path || '未找到捆绑的 ffmpeg，请运行 npm run bin:fetch' }}</p>
       </div>
     </section>
   </div>

@@ -1,6 +1,6 @@
 # ytdlp-electron 视频下载方案
 
-> 状态：阶段 2 已落地（格式表 / 仅音频 / 字幕 / cookies / 代理 / 播放列表）  
+> 状态：阶段 2 + 捆绑二进制已落地（不再依赖系统 PATH）  
 > 日期：2026-08-20  
 > 依据：`ytdlp-web` 服务端（Python + yt-dlp）功能语义 + 本仓库 Electron 现有分层
 

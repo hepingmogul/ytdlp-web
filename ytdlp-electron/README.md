@@ -6,7 +6,7 @@
 
 ## 项目简介
 
-Electron + Vite + Vue 3。主进程分层（Controller → Service → DB），通过 `contextBridge` 调用 yt-dlp 子进程下载。开发环境可使用系统 PATH 中的 `yt-dlp` 与 `ffmpeg`。
+Electron + Vite + Vue 3。主进程分层（Controller → Service → DB），通过 `contextBridge` 调用**项目内捆绑**的 yt-dlp / ffmpeg 子进程下载，不依赖系统 PATH。
 
 ## 技术栈
 
@@ -80,20 +80,22 @@ npm run env:init:prod   # 生产
 
 ## 依赖
 
-开发前请确保本机 PATH 中能运行：
+首次开发或打包前拉取捆绑二进制（写入 `resources/bin/<platform-arch>/`，已 gitignore）：
 
 ```powershell
-yt-dlp --version
-ffmpeg -version
+npm run bin:fetch
 ```
 
-也可将二进制放到 `resources/bin/win32-x64/`（或当前平台对应目录）。
+应用不会调用系统里的 `yt-dlp` / `ffmpeg`。设置页可查看捆绑路径与版本。
 
 ## 启动和构建
 
 ### 开发环境
 
 ```bash
+# 首次：下载捆绑的 yt-dlp 与 ffmpeg
+npm run bin:fetch
+
 # 启动开发服务器（并行运行 Vite + esbuild watch + Electron）
 npm run dev
 ```

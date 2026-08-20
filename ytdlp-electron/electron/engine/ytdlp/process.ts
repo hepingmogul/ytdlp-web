@@ -3,7 +3,9 @@
  */
 
 import { spawn, type ChildProcess } from 'child_process';
+import path from 'path';
 import { YtdlpCancelled } from '~/electron/engine/ytdlp/errors';
+import { getBundledBinDir } from '~/electron/utils';
 
 export interface RunYtdlpOptions {
   args: string[];
@@ -51,6 +53,7 @@ function attachLineReader(stream: NodeJS.ReadableStream | null, onLine: (line: s
 
 export function runYtdlp(bin: string, options: RunYtdlpOptions): Promise<RunYtdlpResult> {
   return new Promise((resolve, reject) => {
+    const bundledBin = getBundledBinDir();
     const child = spawn(bin, options.args, {
       cwd: options.cwd,
       windowsHide: true,
@@ -58,6 +61,7 @@ export function runYtdlp(bin: string, options: RunYtdlpOptions): Promise<RunYtdl
       env: {
         ...process.env,
         PYTHONIOENCODING: 'utf-8',
+        PATH: `${bundledBin}${path.delimiter}${process.env.PATH || ''}`,
       },
     });
 
