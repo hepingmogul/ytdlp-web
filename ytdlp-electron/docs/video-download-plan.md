@@ -1,6 +1,6 @@
 # ytdlp-electron 视频下载方案
 
-> 状态：阶段 2 + 捆绑二进制已落地（不再依赖系统 PATH）  
+> 状态：阶段 2 + 捆绑二进制已落地；抖音精选页走 Electron Chromium 适配器  
 > 日期：2026-08-20  
 > 依据：`ytdlp-web` 服务端（Python + yt-dlp）功能语义 + 本仓库 Electron 现有分层
 
@@ -26,7 +26,7 @@
 
 - 账号体系、邀请码、管理员
 - 服务端配额、SSRF 防内网（桌面端仍校验 `http(s)`，禁止 `file://`）
-- 浏览器内嵌登录抓 Cookie（首期只支持导入 `cookies.txt`）
+- 通用站点仍只支持导入 `cookies.txt`（抖音可用内置 Chromium 采集新鲜 Cookie）
 - 自动更新 yt-dlp 二进制（可预留接口，二期再做）
 
 ---
@@ -421,6 +421,7 @@ ffmpeg 许可（LGPL/GPL 构建选择）在发行说明里写清来源。
 8. 无效 URL / 需登录视频：中文错误，不崩溃
 9. 重启应用：中断任务回到队列并继续（阶段 2）
 10. `npm run pack:win`：安装包内 `resources/bin` 存在且便携版能下载（阶段 3）
+11. 抖音 `jingxuan?modal_id=` / `/video/<id>` / `v.douyin.com` 短链：能解析标题并下载（可能短暂打开验证窗）
 
 ---
 
@@ -435,3 +436,18 @@ ffmpeg 许可（LGPL/GPL 构建选择）在发行说明里写清来源。
 5. **产品名：** 沿用「落带」，还是新名字（影响窗口标题与安装包 `productName`）？
 
 回复例如：「同意，按阶段 1 做；二进制开发走 PATH、打包内置；目录用 userData；UI 去掉笔记；名字叫落带」即可开始实施。
+
+---
+
+## 14. 抖音适配（已落地）
+
+捆绑 yt-dlp 不认 `https://www.douyin.com/jingxuan?modal_id=`，标准 `/video/<id>` 也会因缺少新鲜 Cookie 失败。精选页 HTTP 响应是 JS 挑战页，嵌入 Python 同样过不了，除非再带一套浏览器。
+
+做法：
+
+1. 规范化：`modal_id`、`/video/`、`/note/`、`v.douyin.com` 短链 → 视频 ID
+2. 隐藏 `BrowserWindow`（`persist:douyin`）加载精选页，CDP 拦截 `aweme` JSON 或读 `RENDER_DATA`，并导出 Netscape Cookie
+3. 失败则弹出可见窗口让用户过验证
+4. 下载优先用采集到的直链交给 yt-dlp（带 Referer + Cookie）；否则 canonical URL + Cookie
+
+模块：`electron/engine/sites/douyin/`。不嵌入 Python。首期仅单视频，不含主页/合集/图集。

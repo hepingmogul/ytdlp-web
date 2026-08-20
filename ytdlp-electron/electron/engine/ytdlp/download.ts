@@ -10,6 +10,7 @@ import { requireFfmpeg, requireYtdlp } from '~/electron/engine/ytdlp/binaries';
 import { assertHttpUrl, explainYtdlpError, YtdlpCancelled } from '~/electron/engine/ytdlp/errors';
 import { parseProgressLine, type ProgressUpdate } from '~/electron/engine/ytdlp/progress';
 import { runYtdlp } from '~/electron/engine/ytdlp/process';
+import { logger } from '~/electron/utils/logger';
 
 const SKIP_SUFFIXES = new Set(['.part', '.ytdl', '.temp', '.tmp']);
 const MEDIA_SUFFIXES = new Set([
@@ -31,6 +32,7 @@ export interface DownloadJob {
   id: string;
   url: string;
   mode: string;
+  title?: string | null;
   formatId?: string | null;
   audioFormat?: string | null;
   writeSubs?: boolean;
@@ -39,6 +41,9 @@ export interface DownloadJob {
   proxy?: string | null;
   cookies?: string | null;
   outdir: string;
+  extraHeaders?: Record<string, string>;
+  /** 直链下载时不要再传 -f（CDN 没有 format 列表） */
+  skipFormat?: boolean;
 }
 
 export interface DownloadOutputs {
@@ -83,9 +88,24 @@ export function collectOutputs(directory: string): DownloadOutputs {
   };
 }
 
+function safeFileStem(title: string | null | undefined, fallback: string): string {
+  const raw = (title || '').trim() || fallback;
+  const cleaned = raw
+    .replace(/[<>:"/\\|?*%\x00-\x1f]/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 60);
+  return cleaned || fallback;
+}
+
 function buildArgs(job: DownloadJob): string[] {
   const outdir = job.outdir.replace(/\\/g, '/');
   const format = job.formatId || DEFAULT_FORMAT;
+  // 直链 generic 提取器会把整段 CDN 查询串当 id，Windows 路径会超长
+  const outTpl = job.skipFormat
+    ? `${outdir}/${safeFileStem(job.title, job.id.slice(0, 8))}.%(ext)s`
+    : `${outdir}/%(title).60B [%(id).40B].%(ext)s`;
   const args = [
     '--no-warnings',
     '--newline',
@@ -94,6 +114,8 @@ function buildArgs(job: DownloadJob): string[] {
     'download:%(progress)j',
     '--windows-filenames',
     '--restrict-filenames',
+    '--trim-filenames',
+    '180',
     '--no-playlist',
     '--retries',
     '3',
@@ -102,10 +124,11 @@ function buildArgs(job: DownloadJob): string[] {
     '--encoding',
     'utf-8',
     '-o',
-    `${outdir}/%(title).80B [%(id)s].%(ext)s`,
-    '-f',
-    format,
+    outTpl,
   ];
+  if (!job.skipFormat) {
+    args.push('-f', format);
+  }
 
   args.push('--ffmpeg-location', requireFfmpeg());
 
@@ -128,6 +151,17 @@ function buildArgs(job: DownloadJob): string[] {
 
   if (job.cookies) args.push('--cookies', job.cookies);
   if (job.proxy) args.push('--proxy', job.proxy);
+  if (job.extraHeaders) {
+    const referer = job.extraHeaders.Referer;
+    const ua = job.extraHeaders['User-Agent'];
+    if (referer) args.push('--referer', referer);
+    if (ua) args.push('--user-agent', ua);
+    for (const [name, value] of Object.entries(job.extraHeaders)) {
+      if (!name || !value) continue;
+      if (name === 'Referer' || name === 'User-Agent') continue;
+      args.push('--add-header', `${name}: ${value}`);
+    }
+  }
 
   args.push(job.url);
   return args;
@@ -156,7 +190,9 @@ export async function downloadJob(job: DownloadJob, hooks: DownloadHooks): Promi
       throw new YtdlpCancelled();
     }
     if (result.code !== 0) {
-      throw new Error(result.stderr || result.stdout || `yt-dlp 退出码 ${result.code}`);
+      const detail = (result.stderr || result.stdout || `yt-dlp 退出码 ${result.code}`).trim();
+      logger.warn(`[yt-dlp] 下载失败 code=${result.code} url=${job.url.slice(0, 160)} stderr=${detail.slice(0, 800)}`);
+      throw new Error(detail);
     }
     return collectOutputs(job.outdir);
   } catch (err) {

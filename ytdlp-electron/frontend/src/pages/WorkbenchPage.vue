@@ -4,7 +4,7 @@
       <p class="text-xs font-medium uppercase tracking-widest text-sky-600">工作台</p>
       <h2 class="mt-1 text-2xl font-bold text-slate-800">粘贴链接，解析后下载</h2>
       <p class="mt-2 text-sm text-slate-500">
-        解析只取元数据。站点若需登录，先到「设置」导入 cookies.txt。
+        解析只取元数据。支持抖音精选页（modal_id）、短链及其它 yt-dlp 站点。抖音首次解析可能会短暂打开站点页以通过风控；其它站点若需登录，请到「设置」导入 cookies.txt。
       </p>
     </div>
 
@@ -12,8 +12,8 @@
       <div class="flex flex-col gap-3 md:flex-row">
         <input
           v-model="url"
-          type="url"
-          placeholder="粘贴视频或播放列表链接"
+          type="text"
+          placeholder="粘贴视频、抖音精选页或播放列表链接"
           class="min-w-0 flex-1 px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
         >
         <button

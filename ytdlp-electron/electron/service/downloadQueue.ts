@@ -6,6 +6,7 @@ import { spawn, type ChildProcess } from 'child_process';
 import { TASK_MODE, TASK_STATUS, TERMINAL_STATUSES } from '~/electron/shared/constant';
 import { IPC_CHANNELS } from '~/electron/shared/ipcChannels';
 import type { DownloadTask } from '~/electron/shared/types';
+import { looksLikeDouyin, prepareDouyinDownload } from '~/electron/engine/sites/douyin';
 import { downloadJob, YtdlpCancelled } from '~/electron/engine/ytdlp';
 import { getMainWindow } from '~/electron/main/mainWindow';
 import { getSettingsSnapshot } from '~/electron/service/settings';
@@ -123,18 +124,39 @@ async function runOne(taskId: string): Promise<void> {
   };
 
   try {
+    let jobUrl = row.url;
+    let jobCookies = settings.cookiesPath;
+    let jobFormatId = row.format_id;
+    let extraHeaders: Record<string, string> | undefined;
+    let skipFormat = false;
+    if (looksLikeDouyin(row.url)) {
+      const prepared = await prepareDouyinDownload({
+        url: row.url,
+        formatId: row.format_id,
+        cookies: settings.cookiesPath,
+        proxy: row.proxy || settings.proxy,
+      });
+      jobUrl = prepared.url;
+      jobCookies = prepared.cookies;
+      jobFormatId = prepared.formatId ?? row.format_id;
+      extraHeaders = prepared.extraHeaders;
+      skipFormat = prepared.skipFormat;
+    }
     const outputs = await downloadJob(
       {
         id: taskId,
-        url: row.url,
+        url: jobUrl,
         mode: row.mode,
-        formatId: row.format_id,
+        title: row.title,
+        formatId: jobFormatId,
         audioFormat: row.audio_format,
         writeSubs: Boolean(row.write_subs),
         writeAutoSubs: Boolean(row.write_auto_subs),
         subLangs: row.sub_langs,
         proxy: row.proxy || settings.proxy,
-        cookies: settings.cookiesPath,
+        cookies: jobCookies,
+        extraHeaders,
+        skipFormat,
         outdir,
       },
       {

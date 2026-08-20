@@ -7,6 +7,7 @@ import type { FormatItem, FormatPreset, ParseResult, PlaylistEntry } from '~/ele
 import { requireYtdlp, locateFfmpeg } from '~/electron/engine/ytdlp/binaries';
 import { assertHttpUrl, explainYtdlpError } from '~/electron/engine/ytdlp/errors';
 import { runYtdlp } from '~/electron/engine/ytdlp/process';
+import { logger } from '~/electron/utils/logger';
 
 const PRESETS: FormatPreset[] = FORMAT_PRESETS.map((item) => ({ id: item.id, label: item.label }));
 
@@ -128,9 +129,11 @@ export function infoToParse(info: Record<string, unknown>): ParseResult {
   };
 }
 
-export async function extractInfo(url: string, extra?: { cookies?: string | null; proxy?: string | null }): Promise<ParseResult> {
+export async function extractInfoYtdlp(url: string, extra?: { cookies?: string | null; proxy?: string | null }): Promise<ParseResult> {
   assertHttpUrl(url);
+  const started = Date.now();
   const bin = requireYtdlp();
+  logger.info(`[yt-dlp] 开始解析 url=${url} cookies=${extra?.cookies || '(无)'} bin=${bin}`);
   const args = [
     '-J',
     '--flat-playlist',
@@ -154,12 +157,18 @@ export async function extractInfo(url: string, extra?: { cookies?: string | null
 
   try {
     const result = await runYtdlp(bin, { args });
+    logger.info(
+      `[yt-dlp] 结束 code=${result.code} stdout=${result.stdout.length}B stderr=${result.stderr.length}B 耗时=${Date.now() - started}ms`,
+    );
     if (result.code !== 0) {
+      const errText = (result.stderr || result.stdout || `yt-dlp 退出码 ${result.code}`).slice(0, 500);
+      logger.warn(`[yt-dlp] 非零退出: ${errText}`);
       throw new Error(result.stderr || result.stdout || `yt-dlp 退出码 ${result.code}`);
     }
     const info = extractJsonObject(result.stdout);
     return infoToParse(info);
   } catch (err) {
+    logger.warn(`[yt-dlp] 异常 耗时=${Date.now() - started}ms: ${err instanceof Error ? err.message : String(err)}`);
     throw new Error(explainYtdlpError(err));
   }
 }

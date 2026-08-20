@@ -18,7 +18,15 @@ export function explainYtdlpError(exc: unknown): string {
   if (lowered.includes('ffmpeg')) {
     return '未找到 ffmpeg，无法合并音视频或抽取音频。请安装 ffmpeg 并加入 PATH。';
   }
-  if (lowered.includes('sign in') || lowered.includes('login') || lowered.includes('cookie')) {
+  if (lowered.includes('fresh cookies')) {
+    return '抖音需要新鲜 Cookie。将尝试用内置浏览器打开页面，或请到设置导入 cookies.txt。';
+  }
+  if (lowered.includes('unsupported url')) {
+    return '当前提取器不支持该链接格式。';
+  }
+  if (
+    /sign in to|please log in|login required|only available for registered|needs (?:a )?login/i.test(text)
+  ) {
     return '该内容需要登录。请稍后在设置中导入 cookies.txt 后重试。';
   }
   if (lowered.includes('private')) {

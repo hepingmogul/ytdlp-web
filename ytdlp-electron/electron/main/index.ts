@@ -5,7 +5,7 @@
 
 import path from 'path';
 import { config } from 'dotenv';
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, session } from 'electron';
 
 // 从 electron/.env 加载主进程环境（打包后文件不存在则忽略）
 const electronEnvDir = path.resolve(__dirname, '../../../electron');
@@ -18,6 +18,7 @@ config({
 import { initDatabase, closeDatabase } from '~/electron/db/sqlite';
 import { registerIpcHandlers } from '~/electron/controller';
 import { createMainWindow } from '~/electron/main/mainWindow';
+import { disposeDouyinHarvest } from '~/electron/engine/sites/douyin';
 import { recoverAndStartQueue } from '~/electron/service/downloadQueue';
 import { getSettingsSnapshot } from '~/electron/service/settings';
 import { initLogger, logger } from '~/electron/utils/logger';
@@ -60,6 +61,7 @@ app.on('window-all-closed', () => {
  */
 app.on('will-quit', async () => {
   logger.info('[Main] App will quit, cleaning up...');
+  disposeDouyinHarvest();
   await closeDatabase();
 });
 
@@ -68,7 +70,18 @@ app.on('will-quit', async () => {
  */
 app.on('web-contents-created', (_event, contents) => {
   contents.setWindowOpenHandler(({ url }) => {
-    // 阻止在应用内打开外部链接
+    // 抖音验证窗口需要允许站内弹层（登录/验证码）
+    if (contents.session === session.fromPartition('persist:douyin')) {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 480,
+          height: 720,
+          autoHideMenuBar: true,
+          webPreferences: { partition: 'persist:douyin' },
+        },
+      };
+    }
     if (url.startsWith('http:') || url.startsWith('https:')) {
       const { shell } = require('electron');
       shell.openExternal(url);

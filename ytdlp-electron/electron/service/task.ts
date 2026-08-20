@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { shell } from 'electron';
 import { DEFAULT_FORMAT, TASK_MODE, TASK_STATUS, TERMINAL_STATUSES } from '~/electron/shared/constant';
 import type { CreateTaskInput, DownloadTask } from '~/electron/shared/types';
+import { coerceHttpUrl, looksLikeDouyin, normalizeDouyinVideo } from '~/electron/engine/sites/douyin';
 import { assertHttpUrl } from '~/electron/engine/ytdlp';
 import { enqueue, refreshParentStatus, requestCancel } from '~/electron/service/downloadQueue';
 import { getSettingsSnapshot } from '~/electron/service/settings';
@@ -69,9 +70,16 @@ export class TaskService {
     }
   }
 
-  create(input: CreateTaskInput): ServiceResponse<DownloadTask> {
+  async create(input: CreateTaskInput): Promise<ServiceResponse<DownloadTask>> {
     try {
-      assertHttpUrl(input.url);
+      const url = coerceHttpUrl(input.url);
+      assertHttpUrl(url);
+      if (looksLikeDouyin(url)) {
+        const normalized = await normalizeDouyinVideo(url);
+        input = { ...input, url: normalized.canonical };
+      } else {
+        input = { ...input, url };
+      }
       const settings = getSettingsSnapshot();
       const formatId = input.audioOnly
         ? 'bestaudio/best'
