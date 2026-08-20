@@ -1,0 +1,74 @@
+appId: com.electron-vite.desktop-app
+productName: Electron Vite Desktop App
+copyright: Copyright © 2025
+compression: maximum
+electronLanguages:
+  - zh-CN
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - "!dist/**/*.map"
+
+asar: true
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: "${productName}"
+  artifactName: "${productName}-${version}-Setup.${ext}"
+
+mac:
+  icon: build/icon.icns
+  category: public.app-category.utilities
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+
+dmg:
+  title: "${productName} ${version}"
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+
+linux:
+  icon: build
+  target:
+    - AppImage
+    - deb
+  category: Utility
+
+appImage:
+  artifactName: "${productName}-${version}.${ext}"
+
+deb:
+  depends:
+    - libnotify4
+    - libxtst6
+    - libnss3
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+
+npmRebuild: true

@@ -1,0 +1,56 @@
+{
+  "name": "electron-vite-desktop-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Electron + Vite + Vue 3 桌面应用 (Monorepo Workspace)",
+  "main": "dist/electron/main/index.js",
+  "type": "module",
+  "scripts": {
+    "env:init": "node manifests/envs/initEnv.mjs",
+    "env:init:dev": "npm run env:init -- development",
+    "env:init:test": "npm run env:init -- test",
+    "env:init:prod": "npm run env:init -- production",
+    "dev": "npm run env:init:dev && concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:vite": "npm run dev --prefix frontend",
+    "dev:electron": "node internal/scripts/watch.mjs",
+    "build": "npm run env:init:prod && npm run build:vite && npm run build:electron",
+    "build:vite": "npm run build --prefix frontend",
+    "build:electron": "node internal/scripts/build.mjs",
+    "rebuild": "electron-rebuild",
+    "preview": "npm run preview --prefix frontend",
+    "start": "electron .",
+    "pack": "npm run env:init:prod && node internal/scripts/pack.mjs",
+    "pack:win": "npm run env:init:prod && node internal/scripts/pack.mjs --win",
+    "pack:mac": "npm run env:init:prod && node internal/scripts/pack.mjs --mac",
+    "pack:linux": "npm run env:init:prod && node internal/scripts/pack.mjs --linux",
+    "pack:skip-build": "node internal/scripts/pack.mjs --skip-build"
+  },
+  "keywords": [
+    "electron",
+    "vite",
+    "vue",
+    "typescript",
+    "desktop"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "dayjs": "^1.11.21",
+    "dotenv": "^17.4.2",
+    "electron-log": "^5.4.4",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.22"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.15.15",
+    "concurrently": "^9.1.2",
+    "electron": "^36.2.0",
+    "electron-builder": "^26.8.1",
+    "electron-rebuild": "^3.2.9",
+    "esbuild": "^0.25.4",
+    "typescript": "^5.8.3",
+    "wait-on": "^8.0.3"
+  }
+}

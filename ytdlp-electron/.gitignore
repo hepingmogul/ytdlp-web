@@ -1,0 +1,46 @@
+# 依赖
+node_modules/
+
+# 构建输出
+dist/
+release/
+out/
+
+# 环境变量（生成物忽略，模板入库）
+.env
+.env.local
+.env.*
+!.env.example
+!manifests/envs/**/.env.*
+
+# 日志
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# 数据库
+data/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 测试覆盖率
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+.claude
+
+# 自动复制的 shared 目录
+electron/shared
+frontend/src/shared
