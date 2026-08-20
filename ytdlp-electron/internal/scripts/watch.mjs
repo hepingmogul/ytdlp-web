@@ -6,6 +6,7 @@
 
 import * as esbuild from 'esbuild';
 import { spawn, execFileSync, execSync } from 'child_process';
+import crypto from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -125,7 +126,74 @@ let rebuildTimer = null;
 let isRebuilding = false;
 let rebuildPluginTrigger = false; // 标记 onEnd 是否由全量 rebuild 触发
 const pendingChanges = new Set(); // 收集变化的文件路径
+const fileHashes = new Map(); // 绝对路径 → 内容哈希，用于过滤无内容变化的 FS 事件
 const DEBOUNCE_DELAY = 3000; // 节流延迟 3 秒
+
+/**
+ * 规范化监视路径，避免 Windows 斜杠/大小写导致哈希缓存 miss
+ */
+function normalizeWatchPath(filePath) {
+  return path.resolve(filePath);
+}
+
+/**
+ * 计算文件内容哈希。Windows 上打开/关闭文件也会触发 fs.watch（属性、atime），
+ * 必须以内容为准，mtime/size 不够可靠。
+ */
+function hashFile(filePath) {
+  try {
+    const buf = fs.readFileSync(filePath);
+    return crypto.createHash('sha1').update(buf).digest('hex');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 预填已有 .ts 文件的内容哈希，避免首次打开文件被当成“新增”
+ */
+function seedFileHashes(dir) {
+  for (const file of collectTsFiles(dir)) {
+    const key = normalizeWatchPath(file);
+    const hash = hashFile(key);
+    if (hash) fileHashes.set(key, hash);
+  }
+}
+
+function isSharedFile(filePath) {
+  const rel = path.relative(rootDir, filePath);
+  return rel.startsWith('shared') || rel.startsWith('shared\\');
+}
+
+/**
+ * 从候选路径中筛出真正内容变化的文件，并更新哈希缓存。
+ * 删除/无法读取的文件不进入增量编译列表。
+ */
+function takeChangedFiles(candidates) {
+  const changed = [];
+  for (const file of candidates) {
+    const key = normalizeWatchPath(file);
+    let stat;
+    try {
+      if (!fs.existsSync(key)) {
+        fileHashes.delete(key);
+        continue;
+      }
+      stat = fs.statSync(key);
+    } catch {
+      continue;
+    }
+    if (!stat.isFile()) continue;
+
+    const next = hashFile(key);
+    if (next === null) continue;
+    const prev = fileHashes.get(key);
+    if (next === prev) continue;
+    fileHashes.set(key, next);
+    changed.push(key);
+  }
+  return changed;
+}
 
 /**
  * esbuild rebuild 回调插件（仅在全量 rebuild 时触发后续逻辑）
@@ -270,9 +338,6 @@ async function compileSingleFile(entryFile) {
 function debouncedRebuild(ctx) {
   if (rebuildTimer) {
     clearTimeout(rebuildTimer);
-    console.log('[Watch] File changed, resetting debounce timer...');
-  } else {
-    console.log('[Watch] File changed, waiting 3s before rebuild...');
   }
 
   rebuildTimer = setTimeout(async () => {
@@ -281,12 +346,27 @@ function debouncedRebuild(ctx) {
     isRebuilding = true;
 
     try {
-      const changedFiles = [...pendingChanges];
+      const candidates = [...pendingChanges];
       pendingChanges.clear();
+      const changedFiles = takeChangedFiles(candidates);
 
-      if (changedFiles.length > 0) {
-        console.log(`[Watch] Incremental build (${changedFiles.length} file(s))...`);
-        for (const file of changedFiles) {
+      if (changedFiles.length === 0) {
+        // 打开/关闭、属性变更等：内容没变则不编译、不重启 Electron
+        console.log('[Watch] 忽略：文件内容未变化');
+        return;
+      }
+
+      const sharedChanged = changedFiles.filter((file) => isSharedFile(file));
+      const electronChanged = changedFiles.filter((file) => !isSharedFile(file));
+
+      if (sharedChanged.length > 0) {
+        console.log(`[Watch] shared/ 内容变化 (${sharedChanged.length} file(s))，同步拷贝...`);
+        copyShared();
+      }
+
+      if (electronChanged.length > 0) {
+        console.log(`[Watch] Incremental build (${electronChanged.length} file(s))...`);
+        for (const file of electronChanged) {
           const rel = path.relative(rootDir, file);
           console.log(`[Watch]   Compiling: ${rel}`);
           try {
@@ -297,10 +377,6 @@ function debouncedRebuild(ctx) {
         }
         console.log('[Watch] Incremental build complete.');
         handleWatchBuildComplete();
-      } else {
-        console.log('[Watch] Full rebuild...');
-        rebuildPluginTrigger = true;
-        await ctx.rebuild();
       }
     } catch (err) {
       console.error('[Watch] Rebuild error:', err);
@@ -372,14 +448,17 @@ async function watch() {
   const electronDir = path.resolve(rootDir, 'electron');
   const sharedDir = path.resolve(rootDir, 'shared');
 
+  seedFileHashes(electronDir);
+  seedFileHashes(sharedDir);
+
   const onFileChange = (file) => {
-    const rel = path.relative(rootDir, file);
-    console.log(`[Watch] File changed: ${rel}`);
-    if (rel.startsWith('shared') || rel.startsWith('shared\\')) {
-      copyShared();
+    const key = normalizeWatchPath(file);
+    const next = hashFile(key);
+    // 打开/关闭、atime/属性变更：内容与缓存一致则立刻忽略，不进入节流、不编译
+    if (next !== null && next === fileHashes.get(key)) {
       return;
     }
-    pendingChanges.add(file);
+    pendingChanges.add(key);
     debouncedRebuild(ctx);
   };
 
