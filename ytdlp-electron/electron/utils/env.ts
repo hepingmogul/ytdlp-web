@@ -51,7 +51,7 @@ export const electronConfig = {
     return getEnv('ELECTRON_APP_ENV', getEnv('NODE_ENV', 'production'));
   },
   get appTitle() {
-    return getEnv('ELECTRON_APP_TITLE', 'Electron App');
+    return getEnv('ELECTRON_APP_TITLE', '落带');
   },
   get frontendUrl() {
     return getEnv('ELECTRON_FRONTEND_URL', 'http://localhost:5173');

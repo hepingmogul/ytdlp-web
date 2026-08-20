@@ -2,11 +2,36 @@
  * 主进程专用类型定义
  */
 
-import type { Note, Category, LoginState, IPCResponse, NoteInput, NoteUpdateInput, CategoryInput } from '~/electron/shared/types';
+import type {
+  Note,
+  Category,
+  LoginState,
+  IPCResponse,
+  NoteInput,
+  NoteUpdateInput,
+  CategoryInput,
+  AppSettings,
+  AppSettingsUpdate,
+  BinaryCheckResult,
+  CreateTaskInput,
+  DownloadTask,
+  ParseResult,
+} from '~/electron/shared/types';
 
-// ==================== 数据库实体扩展类型 ====================
-
-export type { Note, Category, LoginState, NoteInput, NoteUpdateInput, CategoryInput };
+export type {
+  Note,
+  Category,
+  LoginState,
+  NoteInput,
+  NoteUpdateInput,
+  CategoryInput,
+  AppSettings,
+  AppSettingsUpdate,
+  BinaryCheckResult,
+  CreateTaskInput,
+  DownloadTask,
+  ParseResult,
+};
 
 export interface LoginStateInput {
   name: string;
@@ -18,6 +43,7 @@ export interface LoginStateInput {
 
 // ==================== Service 返回类型 ====================
 
+export type { IPCResponse };
 export type ServiceResponse<T = unknown> = IPCResponse<T>;
 
 export interface QueryResult<T> {

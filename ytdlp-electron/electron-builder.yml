@@ -1,6 +1,6 @@
-appId: com.electron-vite.desktop-app
-productName: Electron Vite Desktop App
-copyright: Copyright © 2025
+appId: com.luodai.desktop
+productName: 落带
+copyright: Copyright © 2026
 compression: maximum
 electronLanguages:
   - zh-CN
@@ -14,6 +14,12 @@ files:
   - "!dist/**/*.map"
 
 asar: true
+
+extraResources:
+  - from: resources/bin
+    to: bin
+    filter:
+      - "**/*"
 
 win:
   icon: build/icon.ico

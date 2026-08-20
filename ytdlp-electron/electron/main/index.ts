@@ -18,6 +18,8 @@ config({
 import { initDatabase, closeDatabase } from '~/electron/db/sqlite';
 import { registerIpcHandlers } from '~/electron/controller';
 import { createMainWindow } from '~/electron/main/mainWindow';
+import { recoverAndStartQueue } from '~/electron/service/downloadQueue';
+import { getSettingsSnapshot } from '~/electron/service/settings';
 import { initLogger, logger } from '~/electron/utils/logger';
 
 // 初始化日志系统（必须在其他模块之前）
@@ -29,13 +31,10 @@ initLogger();
 app.whenReady().then(async () => {
   logger.info('[Main] App is ready');
 
-  // 初始化数据库
   await initDatabase();
-
-  // 注册 IPC 处理器
   registerIpcHandlers();
-
-  // 创建主窗口
+  getSettingsSnapshot();
+  recoverAndStartQueue();
   createMainWindow();
 
   // macOS: 点击 dock 图标时重新创建窗口

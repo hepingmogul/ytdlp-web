@@ -1,10 +1,12 @@
-# Electron Vite Desktop App
+# 落带（ytdlp-electron）
 
-现代化的 Electron + Vite + Vue 3 桌面应用开发模板。
+基于 [yt-dlp](https://github.com/yt-dlp/yt-dlp) 的桌面视频下载器：粘贴链接、解析格式、排队下载到本机目录。
+
+**只用于下载你有权获取的内容。** 本项目不提供破解、绕过版权保护或未授权抓取的能力。
 
 ## 项目简介
 
-本项目是一个基于 Electron、Vite、Vue 3 和 TypeScript 构建的桌面应用基础模板。采用主进程分层架构（Controller → Service → DB），使用 `contextBridge` 实现安全的 IPC 通信，并集成了 better-sqlite3 数据库、TailwindCSS 原子化 CSS 工具，提供完整的开发热更新和生产构建流程。
+Electron + Vite + Vue 3。主进程分层（Controller → Service → DB），通过 `contextBridge` 调用 yt-dlp 子进程下载。开发环境可使用系统 PATH 中的 `yt-dlp` 与 `ffmpeg`。
 
 ## 技术栈
 
@@ -75,6 +77,17 @@ npm run env:init:prod   # 生产
 `npm run dev` 会自动执行 `env:init:dev`；`npm run build` / `npm run pack` 会自动执行 `env:init:prod`。安装包不包含 `.env`，主进程走代码默认值，前端 `VITE_*` 已在构建期打入产物。
 
 本地覆盖可在对应目录放 `.env.local`（不会被 `env:init` 覆盖）。
+
+## 依赖
+
+开发前请确保本机 PATH 中能运行：
+
+```powershell
+yt-dlp --version
+ffmpeg -version
+```
+
+也可将二进制放到 `resources/bin/win32-x64/`（或当前平台对应目录）。
 
 ## 启动和构建
 

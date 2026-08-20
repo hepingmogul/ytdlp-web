@@ -2,7 +2,7 @@
   "name": "electron-vite-desktop-app",
   "version": "1.0.0",
   "private": true,
-  "description": "Electron + Vite + Vue 3 桌面应用 (Monorepo Workspace)",
+  "description": "落带：基于 yt-dlp 的桌面视频下载器",
   "main": "dist/electron/main/index.js",
   "type": "module",
   "scripts": {

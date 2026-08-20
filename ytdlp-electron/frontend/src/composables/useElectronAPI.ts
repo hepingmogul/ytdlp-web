@@ -3,10 +3,25 @@
  * 封装 window.electronAPI 的调用，提供类型安全的前端接口
  */
 
-import { ref } from 'vue';
-import { IPC_API_ROUTE } from '../utils/ipcChannels';
+import { onMounted, onUnmounted, ref } from 'vue';
+import { IPC_API_ROUTE, IPC_CHANNELS } from '../utils/ipcChannels';
 import { PAGINATION } from '../shared/constant';
-import type { IPCResponse, Note, Category, AppInfo, NoteInput, NoteUpdateInput, CategoryInput } from '../types';
+import type {
+  IPCResponse,
+  Note,
+  Category,
+  AppInfo,
+  NoteInput,
+  NoteUpdateInput,
+  CategoryInput,
+  ParseResult,
+  DownloadTask,
+  DownloadProgress,
+  CreateTaskInput,
+  AppSettings,
+  AppSettingsUpdate,
+  BinaryCheckResult,
+} from '../types';
 
 /**
  * 通用 IPC 调用封装
@@ -180,4 +195,136 @@ export function useAppAPI() {
     getAppInfo,
     getPlatform,
   };
+}
+
+export function useParseAPI() {
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+
+  async function parseUrl(url: string) {
+    loading.value = true;
+    error.value = null;
+    try {
+      return await ipcInvoke<ParseResult>(IPC_API_ROUTE.parse.url, { url });
+    } catch (e: any) {
+      error.value = e.message;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  return { loading, error, parseUrl };
+}
+
+export function useTaskAPI() {
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+
+  async function listTasks(includeChildren = false) {
+    loading.value = true;
+    error.value = null;
+    try {
+      return await ipcInvoke<{ items: DownloadTask[] }>(IPC_API_ROUTE.task.list, { includeChildren });
+    } catch (e: any) {
+      error.value = e.message;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function createTask(input: CreateTaskInput) {
+    loading.value = true;
+    error.value = null;
+    try {
+      return await ipcInvoke<DownloadTask>(IPC_API_ROUTE.task.create, input);
+    } catch (e: any) {
+      error.value = e.message;
+      throw e;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function cancelTask(id: string) {
+    return await ipcInvoke<DownloadTask>(IPC_API_ROUTE.task.cancel, { id });
+  }
+
+  async function retryTask(id: string) {
+    return await ipcInvoke<DownloadTask>(IPC_API_ROUTE.task.retry, { id });
+  }
+
+  async function deleteTask(id: string) {
+    return await ipcInvoke<{ deleted: boolean }>(IPC_API_ROUTE.task.delete, { id });
+  }
+
+  async function openFolder(id: string) {
+    return await ipcInvoke<{ opened: boolean }>(IPC_API_ROUTE.task.openFolder, { id });
+  }
+
+  async function listChildren(id: string) {
+    return await ipcInvoke<{ items: DownloadTask[] }>(IPC_API_ROUTE.task.children, { id });
+  }
+
+  return {
+    loading,
+    error,
+    listTasks,
+    createTask,
+    cancelTask,
+    retryTask,
+    deleteTask,
+    openFolder,
+    listChildren,
+  };
+}
+
+export function useSettingsAPI() {
+  async function getSettings() {
+    return await ipcInvoke<AppSettings>(IPC_API_ROUTE.settings.get);
+  }
+
+  async function updateSettings(input: AppSettingsUpdate) {
+    return await ipcInvoke<AppSettings>(IPC_API_ROUTE.settings.update, input);
+  }
+
+  async function chooseDownloadDir() {
+    return await ipcInvoke<AppSettings>(IPC_API_ROUTE.settings.chooseDownloadDir);
+  }
+
+  async function checkBinaries() {
+    return await ipcInvoke<BinaryCheckResult>(IPC_API_ROUTE.settings.checkBinaries);
+  }
+
+  async function importCookies() {
+    return await ipcInvoke<AppSettings>(IPC_API_ROUTE.settings.importCookies);
+  }
+
+  async function clearCookies() {
+    return await ipcInvoke<AppSettings>(IPC_API_ROUTE.settings.clearCookies);
+  }
+
+  return {
+    getSettings,
+    updateSettings,
+    chooseDownloadDir,
+    checkBinaries,
+    importCookies,
+    clearCookies,
+  };
+}
+
+export function useDownloadProgress(onProgress: (payload: DownloadProgress) => void) {
+  let off: (() => void) | undefined;
+  onMounted(() => {
+    if (!window.electronAPI) return;
+    off = window.electronAPI.on(IPC_CHANNELS.DOWNLOAD.PROGRESS, (...args: unknown[]) => {
+      const payload = args[0] as DownloadProgress;
+      if (payload?.id) onProgress(payload);
+    });
+  });
+  onUnmounted(() => {
+    off?.();
+  });
 }

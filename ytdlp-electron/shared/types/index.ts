@@ -94,3 +94,141 @@ export interface AppInfo {
   platform: string;
   electronVersion: string;
 }
+
+// ==================== 视频解析 / 下载 ====================
+
+export interface FormatItem {
+  formatId: string;
+  ext?: string | null;
+  resolution?: string | null;
+  fps?: number | null;
+  vcodec?: string | null;
+  acodec?: string | null;
+  filesize?: number | null;
+  tbr?: number | null;
+  note?: string | null;
+  hasVideo: boolean;
+  hasAudio: boolean;
+}
+
+export interface PlaylistEntry {
+  id?: string | null;
+  title?: string | null;
+  url: string;
+  duration?: number | null;
+  thumbnail?: string | null;
+}
+
+export interface FormatPreset {
+  id: string;
+  label: string;
+}
+
+export interface ParseResult {
+  type: 'video' | 'playlist';
+  id?: string | null;
+  title?: string | null;
+  extractor?: string | null;
+  thumbnail?: string | null;
+  duration?: number | null;
+  uploader?: string | null;
+  webpageUrl?: string | null;
+  formats: FormatItem[];
+  presets: FormatPreset[];
+  entries: PlaylistEntry[];
+}
+
+export interface CreateTaskEntry {
+  url: string;
+  title?: string | null;
+  thumbnail?: string | null;
+}
+
+export interface CreateTaskInput {
+  url: string;
+  title?: string | null;
+  thumbnail?: string | null;
+  extractor?: string | null;
+  formatId?: string | null;
+  audioOnly?: boolean;
+  audioFormat?: 'mp3' | 'm4a' | 'opus';
+  writeSubs?: boolean;
+  writeAutoSubs?: boolean;
+  subLangs?: string[];
+  proxy?: string | null;
+  entries?: CreateTaskEntry[];
+}
+
+export interface DownloadTask {
+  id: string;
+  parentId?: string | null;
+  url: string;
+  title?: string | null;
+  thumbnail?: string | null;
+  extractor?: string | null;
+  mode: string;
+  formatId?: string | null;
+  audioFormat?: string | null;
+  writeSubs: boolean;
+  writeAutoSubs: boolean;
+  subLangs?: string | null;
+  proxy?: string | null;
+  status: string;
+  percent: number;
+  speed?: string | null;
+  eta?: number | null;
+  downloadedBytes: number;
+  totalBytes: number;
+  errorMessage?: string | null;
+  outputPath?: string | null;
+  filename?: string | null;
+  filesize?: number | null;
+  extraFiles: string[];
+  createdAt?: string | null;
+  startedAt?: string | null;
+  finishedAt?: string | null;
+  childCount: number;
+  doneCount: number;
+}
+
+export interface DownloadProgress {
+  id: string;
+  parentId?: string | null;
+  status: string;
+  percent: number;
+  speed?: string | null;
+  eta?: number | null;
+  downloadedBytes: number;
+  totalBytes: number;
+  errorMessage?: string | null;
+  filename?: string | null;
+  title?: string | null;
+  childCount?: number;
+  doneCount?: number;
+}
+
+export interface AppSettings {
+  downloadDir: string;
+  cookiesPath?: string | null;
+  hasCookies: boolean;
+  proxy?: string | null;
+  maxConcurrent: number;
+  defaultFormat: string;
+}
+
+export interface AppSettingsUpdate {
+  downloadDir?: string;
+  proxy?: string | null;
+  maxConcurrent?: number;
+  defaultFormat?: string;
+}
+
+export interface BinaryInfo {
+  path: string | null;
+  version: string | null;
+}
+
+export interface BinaryCheckResult {
+  ytdlp: BinaryInfo;
+  ffmpeg: BinaryInfo;
+}

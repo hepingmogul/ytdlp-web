@@ -44,3 +44,8 @@ coverage/
 # 自动复制的 shared 目录
 electron/shared
 frontend/src/shared
+
+# 捆绑的 yt-dlp / ffmpeg 二进制（由脚本或手动放入）
+resources/bin/**
+!resources/bin/.gitkeep
+!resources/bin/README.md

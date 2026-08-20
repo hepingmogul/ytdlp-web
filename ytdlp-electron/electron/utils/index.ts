@@ -38,11 +38,52 @@ export function getDbDir(): string {
  */
 export function getDbPath(): string {
   const dbDir = getDbDir();
-  // 确保目录存在
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
+  ensureDir(dbDir);
   return path.join(dbDir, DB.NAME);
+}
+
+/**
+ * 确保目录存在
+ */
+export function ensureDir(dir: string): string {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  return dir;
+}
+
+/**
+ * 默认下载根目录
+ */
+export function getDefaultDownloadDir(): string {
+  return path.join(getDbDir(), 'downloads');
+}
+
+/**
+ * 任务输出目录：<downloadDir>/<taskId>
+ */
+export function getTaskDir(downloadDir: string, taskId: string): string {
+  return ensureDir(path.join(downloadDir, taskId));
+}
+
+/** cookies.txt 存放目录 */
+export function getCookiesDir(): string {
+  return ensureDir(path.join(getDbDir(), 'cookies'));
+}
+
+export function getCookiesFilePath(): string {
+  return path.join(getCookiesDir(), 'cookies.txt');
+}
+
+/**
+ * 开发态 / 打包后的捆绑二进制目录
+ */
+export function getBundledBinDir(): string {
+  const platformDir = `${process.platform}-${process.arch}`;
+  if (process.env.NODE_ENV === 'development') {
+    return path.join(process.cwd(), 'resources', 'bin', platformDir);
+  }
+  return path.join(process.resourcesPath, 'bin');
 }
 
 /**
